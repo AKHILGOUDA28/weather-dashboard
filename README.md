@@ -1,111 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" ng-app="WeatherApp">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swetha Rani's Portfolio</title>
+    <title>Weather Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <!-- Font Awesome (For Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- AngularJS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
     <style>
-        /* General Styles */
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            text-align: center;
+            background-image: url('https://i0.wp.com/picjumbo.com/wp-content/uploads/beautiful-fall-nature-scenery-free-image.jpeg?w=600&quality=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            font-family: 'Arial', sans-serif;
         }
-
-        h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-top: 50px;
+        .container {
+            margin-top: 40px;
+            max-width: 600px;
         }
-
-        p {
-            color: #555;
-            font-size: 1.2em;
+        .card {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 12px;
         }
-
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 15px 30px;
-            font-size: 18px;
+        .weather-icon {
+            font-size: 50px;
+        }
+        .btn-custom {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .favorite-list a {
             text-decoration: none;
             color: white;
-            background-color: #007BFF;
-            border-radius: 5px;
-            transition: background-color 0.3s;
         }
-
-        a:hover {
-            background-color: #0056b3;
-        }
-
-        /* Responsive Design */
-        .container {
+        iframe {
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Mobile First Approach */
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 1.8em;
-            }
-
-            p {
-                font-size: 1em;
-            }
-
-            a {
-                padding: 10px 20px;
-                font-size: 16px;
-            }
-        }
-
-        /* Tablets and Small Screens */
-        @media (min-width: 601px) and (max-width: 1024px) {
-            h1 {
-                font-size: 2.2em;
-            }
-
-            p {
-                font-size: 1.1em;
-            }
-
-            a {
-                padding: 12px 25px;
-                font-size: 17px;
-            }
-        }
-
-        /* Desktop */
-        @media (min-width: 1025px) {
-            h1 {
-                font-size: 3em;
-            }
-
-            p {
-                font-size: 1.3em;
-            }
-
-            a {
-                padding: 15px 30px;
-                font-size: 18px;
-            }
+            height: 400px;
+            border-radius: 10px;
+            margin-top: 20px;
         }
     </style>
 </head>
+<body ng-controller="WeatherController as weatherCtrl">
 
-<body>
-    <div class="container">
-        <h1>Welcome to My Portfolio</h1>
-        <p>Hi, I'm Swetha Rani. You can view and download my resume below:</p>
-        <a href="https://swetha-rani-portfolio.s3.amazonaws.com/resume.pdf" target="_blank">Download My Resume</a>
+    <div class="container text-center">
+        <h1><i class="fas fa-cloud-sun"></i> Weather Dashboard</h1>
+
+        <!-- Search Input -->
+        <div class="form-group">
+            <input type="text" class="form-control" ng-model="weatherCtrl.cityName" placeholder="Enter city name">
+        </div>
+        
+        <button class="btn btn-warning btn-custom" ng-click="weatherCtrl.getWeather()">
+            <i class="fas fa-search"></i> Fetch Weather
+        </button>
+        <button class="btn btn-light btn-custom" ng-click="weatherCtrl.addToFavorites()">
+            <i class="fas fa-star"></i> Add to Favorites
+        </button>
+
+        <!-- Error Message -->
+        <div class="alert alert-danger mt-3" ng-if="weatherCtrl.error">{{ weatherCtrl.error }}</div>
+
+        <!-- Weather Details -->
+        <div class="card p-3 mt-4" ng-if="weatherCtrl.weatherData">
+            <h2>{{ weatherCtrl.weatherData.name }}</h2>
+            <i class="{{ weatherCtrl.weatherIcon }} weather-icon"></i>
+            <h3>{{ weatherCtrl.weatherData.main.temp }}°C</h3>
+            <p>Humidity: {{ weatherCtrl.weatherData.main.humidity }}%</p>
+            <p>{{ weatherCtrl.weatherData.weather[0].description | uppercase }}</p>
+        </div>
+
+        <!-- Interactive Weather Map -->
+        <iframe ng-if="weatherCtrl.weatherData" 
+            ng-src="{{ weatherCtrl.getMapUrl(weatherCtrl.weatherData.coord.lat, weatherCtrl.weatherData.coord.lon) }}" 
+            frameborder="0">
+        </iframe>
+
+        <!-- Favorite Cities -->
+        <h3 class="mt-4">Favorite Cities</h3>
+        <ul class="list-group">
+            <li class="list-group-item bg-transparent text-white favorite-list" 
+                ng-repeat="city in weatherCtrl.favoriteCities | orderBy:'name'">
+                <a href="#" ng-click="weatherCtrl.getWeatherForFavorite(city.name)">
+                    <i class="fas fa-map-marker-alt"></i> {{ city.name }}
+                </a>
+            </li>
+        </ul>
     </div>
-</body>
 
+    <script>
+        angular.module('WeatherApp', [])
+        .controller('WeatherController', function($http, $sce) {
+            var vm = this;
+            vm.cityName = '';
+            vm.weatherData = null;
+            vm.error = '';
+            vm.favoriteCities = [];
+            vm.weatherIcon = '';
+            vm.apiKey = '777bc8be451a2b31971957000008b5ba';  // Updated API key
+
+            // Map weather conditions to icons
+            vm.getWeatherIcon = function(condition) {
+                var icons = {
+                    "Clear": "fas fa-sun",
+                    "Clouds": "fas fa-cloud",
+                    "Rain": "fas fa-cloud-showers-heavy",
+                    "Thunderstorm": "fas fa-bolt",
+                    "Snow": "fas fa-snowflake",
+                    "Drizzle": "fas fa-cloud-rain",
+                    "Mist": "fas fa-smog"
+                };
+                return icons[condition] || "fas fa-cloud-sun";
+            };
+
+            // Generate Weather Map URL
+            vm.getMapUrl = function(lat, lon) {
+                var mapUrl = "https://openweathermap.org/weathermap?basemap=map&cities=true&layer=temperature&lat=" + lat + "&lon=" + lon + "&zoom=10";
+                return $sce.trustAsResourceUrl(mapUrl);
+            };
+
+            // Fetch Weather Data
+            vm.getWeather = function() {
+                var apiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=' + vm.cityName + '&units=metric&appid=' + vm.apiKey;
+
+                $http.get(apiUrl)
+                    .then(function(response) {
+                        vm.weatherData = response.data;
+                        vm.weatherIcon = vm.getWeatherIcon(vm.weatherData.weather[0].main);
+                        vm.error = '';
+                    })
+                    .catch(function() {
+                        vm.weatherData = null;
+                        vm.error = 'City not found. Please enter a valid city.';
+                    });
+            };
+
+            // Fetch Weather for Favorite Cities
+            vm.getWeatherForFavorite = function(cityName) {
+                var apiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=' + cityName + '&units=metric&appid=' + vm.apiKey;
+
+                $http.get(apiUrl)
+                    .then(function(response) {
+                        vm.weatherData = response.data;
+                        vm.weatherIcon = vm.getWeatherIcon(vm.weatherData.weather[0].main);
+                        vm.error = '';
+                    })
+                    .catch(function() {
+                        vm.weatherData = null;
+                        vm.error = 'Error fetching weather data.';
+                    });
+            };
+
+            // Add to Favorite Cities
+            vm.addToFavorites = function() {
+                if (vm.cityName && !vm.favoriteCities.some(city => city.name === vm.cityName)) {
+                    vm.favoriteCities.push({ name: vm.cityName });
+                    vm.cityName = ''; // Clear input field
+                }
+            };
+        });
+    </script>
+
+</body>
 </html>
